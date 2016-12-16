@@ -104,14 +104,33 @@ def is_solved(state):
     return True
 
 
+def canonical_representation(state):
+    positions_per_symbol = {
+        symbol: [0, 0]
+        for symbol in ['Co', 'Dl', 'El', 'Pm', 'Po', 'Ru', 'Tm']
+    }
+
+    for i, floor in enumerate(state[1]):
+        for j, components in enumerate(floor):
+            for component in components:
+                positions_per_symbol[component][j] = i
+
+    return tuple(sorted(tuple(positions) for positions in positions_per_symbol.values()))
+
+
 def solve(initial_state):
-    state_history = {initial_state}
+    state_history = [
+        {canonical_representation(initial_state)},
+        set(),
+        set(),
+        set()
+    ]
     curr_states = {initial_state}
 
     depth = 0
     while True:
         print "Depth: %d" % depth
-        print "Tree size: %d" % len(state_history)
+        print "Tree size: %d" % sum(len(floor_state_history) for floor_state_history in state_history)
 
         if not curr_states:
             return None
@@ -121,19 +140,22 @@ def solve(initial_state):
         for curr_state in curr_states:
             for possible_move in possible_moves(curr_state):
                 new_state = move(curr_state, possible_move)
-                if is_valid_state(new_state) and new_state not in state_history:
-                    if is_solved(new_state):
-                        return depth + 1
+                new_floor = new_state[0]
+                if is_valid_state(new_state):
+                    canon_repr = canonical_representation(new_state)
+                    if canon_repr not in state_history[new_floor]:
+                        if is_solved(new_state):
+                            return depth + 1
 
-                    next_states.add(new_state)
-                    state_history.add(new_state)
+                        next_states.add(new_state)
+                        state_history[new_floor].add(canon_repr)
 
         print "Valid moves: %d" % len(next_states)
         curr_states = next_states
         depth += 1
 
 
-building = (
+part_1 = (
     0,
     (
         (
@@ -156,5 +178,29 @@ building = (
 )
 
 
-print building
-print solve(building)
+part_2 = (
+    0,
+    (
+        (
+            ('Co', 'Dl', 'El', 'Ru', 'Tm'),
+            ('Co', 'Dl', 'El', 'Pm', 'Po', 'Ru', 'Tm')
+        ),
+        (
+            ('Pm', 'Po'),
+            ()
+        ),
+        (
+            (),
+            ()
+        ),
+        (
+            (),
+            ()
+        )
+    )
+)
+
+
+for part_initial_state in [part_1, part_2]:
+    print part_initial_state
+    print solve(part_initial_state)
